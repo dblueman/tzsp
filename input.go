@@ -5,7 +5,7 @@ import (
    "net"
 
    "github.com/google/gopacket"
-	_ "github.com/google/gopacket/layers"
+	"github.com/google/gopacket/layers"
 	"github.com/google/gopacket/pcap"
 )
 
@@ -56,6 +56,17 @@ func (tzsp *Decoder) Next() (*Frame, error) {
          return nil, err
       }
 
+      udpLayer := packet.Layer(layers.LayerTypeUDP)
+      if udpLayer == nil {
+         return nil, errors.New("packet has no UDP layer (fragment?)")
+      }
+
+      udp := udpLayer.(*layers.UDP)
+
+      if udp.DstPort != 37008 {
+         return nil, errors.New("not TZSP packet")
+      }
+
       app := packet.ApplicationLayer()
       if app == nil {
          return nil, errors.New("decode failure (application layer)")
@@ -70,9 +81,9 @@ func (tzsp *Decoder) Next() (*Frame, error) {
    }
 
    frame := Frame{}
-   offset := frame.DecodeTZSP(msg)
-   if offset == -1 {
-      return nil, nil
+   offset, err := frame.DecodeTZSP(msg)
+   if err != nil {
+      return nil, err
    }
 
    frame.DecodeIEEE80211(msg[offset:])

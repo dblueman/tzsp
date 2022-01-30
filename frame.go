@@ -1,6 +1,7 @@
 package tzsp
 
 import (
+   "errors"
    "fmt"
    "sort"
    "strconv"
@@ -73,20 +74,18 @@ func (f *Frame) Print() {
    fmt.Println()
 }
 
-func (f *Frame) DecodeTZSP(buf []byte) int {
+func (f *Frame) DecodeTZSP(buf []byte) (int, error) {
    tzsp := (*FrameTZSP)(unsafe.Pointer(&buf[0]))
 
    if tzsp.Version != 1 || tzsp.Type != TZSPTypeReceived || tzsp.Encapsulation != TZSPEncap80211 {
-      fmt.Printf("skipping %+v\n", tzsp)
-      return -1
+      return -1, errors.New("malformed TZSP frame")
    }
 
    TZSPTagp := (*TZSPTag)(unsafe.Pointer(&tzsp.Tag))
 
    for {
       if TZSPTagp.Len == 0 {
-//         fmt.Printf("invalid len %+v\n", buf)
-         return -1
+         return -1, errors.New("zero length tag")
       }
 
       switch TZSPTagp.TZSPTag {
@@ -106,9 +105,9 @@ func (f *Frame) DecodeTZSP(buf []byte) int {
          // return offset of next frame
          offset := int(uintptr(unsafe.Pointer(TZSPTagp)) - uintptr(unsafe.Pointer(&buf[0])) + 1)
 //         fmt.Printf("frame %+v offset=%v\n", f, offset)
-         return offset
+         return offset, nil
       default:
-         panic("unknown TZSP TZSPTag "+strconv.Itoa(int(TZSPTagp.TZSPTag)))
+         return -1, errors.New("unknown TZSP TZSPTag "+strconv.Itoa(int(TZSPTagp.TZSPTag)))
       }
 
       // move to next TZSPTag
