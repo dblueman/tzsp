@@ -104,7 +104,6 @@ func (f *Frame) DecodeTZSP(buf []byte) (int, error) {
       case TZSPTagEnd:
          // return offset of next frame
          offset := int(uintptr(unsafe.Pointer(TZSPTagp)) - uintptr(unsafe.Pointer(&buf[0])) + 1)
-//         fmt.Printf("frame %+v offset=%v\n", f, offset)
          return offset, nil
       default:
          return -1, errors.New("unknown TZSP TZSPTag "+strconv.Itoa(int(TZSPTagp.TZSPTag)))
@@ -116,16 +115,6 @@ func (f *Frame) DecodeTZSP(buf []byte) (int, error) {
 }
 
 func (f *Frame) DecodeIEEE80211(buf []byte) {
-/*fmt.Print("IEEE802.11:")
-for _, a := range buf {
-   fmt.Printf(" %02x", a)
-}
-fmt.Println()
-*/
-/*   if len(buf) < 36 {
-      return
-   }*/
-
    version := buf[0] & 3
    xtype := (buf[0] >> 2) & 3
    subtype := buf[0] >> 4
@@ -152,7 +141,8 @@ fmt.Println()
       (*f)["fragment"] = buf[34] & 0xf
       (*f)["sequence"] = (uint16(buf[22]) >> 4) | (uint16(buf[23]) << 4)
 
-/*      b := bytes.NewBuffer(buf)
+      /* FIXME add timestamp support:
+      b := bytes.NewBuffer(buf)
       var timestamp uint64
       binary.Read(b[24:], binary.LittleEndian, timestamp)
 
