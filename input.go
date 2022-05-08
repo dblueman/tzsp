@@ -42,6 +42,8 @@ func (tzsp *Decoder) Next() (*Frame, error) {
    var err error
    var msg []byte
 
+   frame := Frame{}
+
    if tzsp.conn != nil {
       msg2 := make([]byte, 1600)
       rlen, _, err = tzsp.conn.ReadFromUDP(msg2)
@@ -55,6 +57,8 @@ func (tzsp *Decoder) Next() (*Frame, error) {
       if err != nil {
          return nil, err
       }
+
+      frame["timestamp"] = packet.Metadata().Timestamp
 
       udpLayer := packet.Layer(layers.LayerTypeUDP)
       if udpLayer == nil {
@@ -80,12 +84,12 @@ func (tzsp *Decoder) Next() (*Frame, error) {
       msg = app.Payload()
    }
 
-   frame := Frame{}
    offset, err := frame.DecodeTZSP(msg)
    if err != nil {
       return nil, err
    }
 
    frame.DecodeIEEE80211(msg[offset:])
+
    return &frame, nil
 }
